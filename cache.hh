@@ -10,7 +10,6 @@
 
 enum STATE { MODIFIED, EXCLUSIVE, SHARED,  INVALID};
 
-
 // 19bit tag | 8bit set | 5bit block
 
 
@@ -19,22 +18,22 @@ class CacheLine {
 private:
   STATE state; 
   unsigned int tag;
-  bool valid;
+  //bool valid;
 
 
 public:
   CacheLine(){
     tag = 0;
     state = INVALID;
-    valid = false;
+    //valid = false;
   }
   ~CacheLine(){};
 
   unsigned int getTag(){return tag;}
   void setTag(unsigned int _tag ) { tag = _tag; }
 
-  bool getValid(){ return valid; }
-  void setValid(bool _valid){ valid = _valid; }
+  //bool getValid(){ return valid; }
+  //void setValid(bool _valid){ valid = _valid; }
 
   STATE getState(){ return state; }
   void setState( STATE _state ) { state =_state; }
@@ -47,10 +46,10 @@ class CacheSet {
 private:
   CacheLine _cache_line[ASSOC];
   int MRU; // most recent used bit for replacement
-  //std::list<CacheLine>_cache_line;
+  
 
 public:
-  CacheSet(){ //LRU = 0;
+  CacheSet(){ 
   };
   ~CacheSet(){};
   
@@ -58,18 +57,20 @@ public:
   
   CacheLine* getLine(int assoc){return &_cache_line[assoc];}
 
-  CacheLine* access( unsigned int tag ){
-    bool hit = false;
+  CacheLine* access( unsigned int tag, bool *hit ){
+    *hit = false;
     for(int i=0; i<ASSOC; i++){
       //TODO: check valid
-      if(_cache_line[i].getTag() == tag){
-        fprintf(stderr, "Hit %d\n", i);
-        hit = true;
-        MRU = i;
-        break;
-      }
+      //if(_cache_line[i].getState != INVALID){
+        if(_cache_line[i].getTag() == tag){
+          //fprintf(stderr, "Hit %d\n", i);
+          *hit = true;
+          MRU = i;
+          break;
+        }
+      //}
     }
-    if(!hit){
+    if( *hit == false ){ //TODO:LRU replacement
 
       if(MRU != (ASSOC-1)){
         MRU  = MRU + 1;
@@ -77,13 +78,30 @@ public:
       else {
         MRU = 0;
       }
-      fprintf(stderr, "Miss %d\n", MRU);
+      //fprintf(stderr, "Miss %d\n", MRU);
       _cache_line[MRU].setTag(tag);
 
     }
     return &_cache_line[MRU];
 
   }
+
+  CacheLine* remoteAccess( unsigned int tag ){
+    bool hit = false;  
+    for(int i=0; i<ASSOC; i++){
+      //TODO: check valid
+      //if(_cache_line[i].getState != INVALID){
+        if(_cache_line[i].getTag() == tag){
+          //fprintf(stderr, "Remote Hit %d\n", i);
+          hit = true;
+          MRU = i;
+          return &_cache_line[i];
+        }
+      //}
+    }
+    return NULL;
+  }
+
 #if 0
   CacheLine* getLRU() { return _cache_line.back(); }
 
